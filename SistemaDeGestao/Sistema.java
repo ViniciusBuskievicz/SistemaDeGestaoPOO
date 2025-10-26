@@ -79,20 +79,40 @@ public class Sistema {
 
     // Cadastro de produto com validação
     private static void cadastrarProduto() {
-        System.out.print("Nome do produto: ");
-        String nome = scanner.nextLine();
-        System.out.print("Preço: ");
-        double preco = scanner.nextDouble();
-        scanner.nextLine(); // Limpa buffer
-        System.out.print("Categoria (ALIMENTOS, ELETRONICOS, LIVROS): ");
-        String categoriaStr = scanner.nextLine().toUpperCase();
+        while (true) {
+            System.out.print("Nome do produto: ");
+            String nome = scanner.nextLine().trim();
+            if (nome.isEmpty()) {
+                System.out.println("Nome não pode ser vazio. Tente novamente.");
+                continue;
+            }
 
-        try {
-            CategoriaProduto categoria = CategoriaProduto.valueOf(categoriaStr);
-            produtos.add(new Produto(nome, preco, categoria));
-            System.out.println("Produto cadastrado com sucesso!");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Erro: " + e.getMessage());
+            System.out.print("Preço: ");
+            String precoStr = scanner.nextLine().trim().replace(',', '.');
+            double preco;
+            try {
+                preco = Double.parseDouble(precoStr);
+                if (preco <= 0) {
+                    System.out.println("Erro: o preço do produto deve ser um número positivo. Tente novamente.");
+                    continue;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Preço inválido. Digite um número válido. Tente novamente.");
+                continue;
+            }
+
+            System.out.print("Categoria (ALIMENTOS, ELETRONICOS, LIVROS): ");
+            String categoriaStr = scanner.nextLine().toUpperCase();
+
+            try {
+                CategoriaProduto categoria = CategoriaProduto.valueOf(categoriaStr);
+                produtos.add(new Produto(nome, preco, categoria));
+                System.out.println("Produto cadastrado com sucesso!");
+                break; // cadastro concluído, sai do loop
+            } catch (IllegalArgumentException e) {
+                System.out.println("Erro: categoria inválida. Use ALIMENTOS, ELETRONICOS ou LIVROS. Tente novamente.");
+                // volta ao início para refazer o cadastro
+            }
         }
     }
 
