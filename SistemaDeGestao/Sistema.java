@@ -9,13 +9,26 @@ public class Sistema {
     private static List<Pedido> pedidos = new ArrayList<>();
     private static Queue<Pedido> filaPedidos = new LinkedList<>();
     private static Scanner scanner = new Scanner(System.in);
+    private static ProcessadorPedidos processador;
+    private static Thread threadProcessador;
 
     public static void main(String[] args) {
         // Inicia a thread que processa pedidos em segundo plano
-        new Thread(new ProcessadorPedidos(filaPedidos)).start();
+        processador = new ProcessadorPedidos(filaPedidos);
+        threadProcessador = new Thread(processador);
+        threadProcessador.start();
 
         // Exibe o menu principal em loop
         exibirMenu();
+        
+        // Ao sair do menu, para o processador
+        processador.stop();
+        try {
+            threadProcessador.join();
+        } catch (InterruptedException e) {
+            System.out.println("Erro ao encerrar processador de pedidos");
+        }
+        scanner.close();
     }
 
     private static void exibirMenu() {
@@ -40,7 +53,10 @@ public class Sistema {
                 case 4 -> listarClientes();
                 case 5 -> listarProdutos();
                 case 6 -> listarPedidos();
-                case 0 -> System.out.println("Encerrando o sistema...");
+                case 0 -> {
+                    System.out.println("Encerrando o sistema...");
+                    processador.stop();
+                }
                 default -> System.out.println("Opção inválida!");
             }
         } while (opcao != 0);

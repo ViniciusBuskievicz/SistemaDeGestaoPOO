@@ -4,27 +4,43 @@ import java.util.Queue;
 
 public class ProcessadorPedidos implements Runnable {
     private Queue<Pedido> fila;
+    private boolean running = true;
 
-    // Construtor que recebe a fila
     public ProcessadorPedidos(Queue<Pedido> fila) {
         this.fila = fila;
     }
 
     @Override
     public void run() {
-        while (true) {
-            Pedido pedido = fila.poll();
-            if (pedido != null) {
-                pedido.setStatus(StatusPedido.PROCESSANDO);
-                System.out.println("Processando pedido de " + pedido.getCliente().getNome());
-                try {
-                    Thread.sleep(3000); // Simula tempo de processamento
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        while (running) {
+            try {
+                Pedido pedido = fila.poll();
+                if (pedido != null) {
+                    // Atualiza para status FILA
+                    pedido.setStatus(StatusPedido.FILA);
+                    System.out.println("Pedido na fila: " + pedido.getCliente().getNome());
+                    Thread.sleep(2000); // Aguarda 2 segundos
+
+                    // Atualiza para status PROCESSANDO
+                    pedido.setStatus(StatusPedido.PROCESSANDO);
+                    System.out.println("Processando pedido de " + pedido.getCliente().getNome());
+                    Thread.sleep(3000); // Simula processamento por 3 segundos
+
+                    // Atualiza para status FINALIZADO
+                    pedido.setStatus(StatusPedido.FINALIZADO);
+                    System.out.println("Pedido finalizado para " + pedido.getCliente().getNome());
+                    System.out.println("Status final: " + pedido);
+                } else {
+                    Thread.sleep(1000); // Espera 1 segundo se a fila estiver vazia
                 }
-                pedido.setStatus(StatusPedido.FINALIZADO);
-                System.out.println("Pedido finalizado: " + pedido);
+            } catch (InterruptedException e) {
+                System.out.println("Processador de pedidos interrompido");
+                running = false;
             }
         }
+    }
+
+    public void stop() {
+        running = false;
     }
 }
