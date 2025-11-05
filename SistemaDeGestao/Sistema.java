@@ -34,14 +34,15 @@ public class Sistema {
     private static void exibirMenu() {
         int opcao;
         do {
-            System.out.println("\n--- MENU PRINCIPAL ---");
-            System.out.println("1. Cadastrar cliente");
-            System.out.println("2. Cadastrar produto");
-            System.out.println("3. Criar pedido");
-            System.out.println("4. Listar clientes");
-            System.out.println("5. Listar produtos");
-            System.out.println("6. Listar pedidos");
-            System.out.println("0. Sair");
+            System.out.println("\n|=====MENU PRINCIPAL======|");
+            System.out.println("|1. Cadastrar cliente     |");
+            System.out.println("|2. Cadastrar produto     |");
+            System.out.println("|3. Criar pedido          |");
+            System.out.println("|4. Listar clientes       |");
+            System.out.println("|5. Listar produtos       |");
+            System.out.println("|6. Listar pedidos        |");
+            System.out.println("|0. Sair                  |");
+            System.out.print(  "|_________________________|\n");
             System.out.print("Escolha uma opção: ");
             opcao = scanner.nextInt();
             scanner.nextLine(); // Limpa o buffer do scanner
@@ -64,16 +65,28 @@ public class Sistema {
 
     // Cadastro de cliente com validação
     private static void cadastrarCliente() {
-        System.out.print("Nome: ");
-        String nome = scanner.nextLine();
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
+        while (true) {
+            System.out.print("Nome: ");
+            String nome = scanner.nextLine().trim();
+            if (nome.isEmpty()) {
+                System.out.println("Erro: Nome não pode ser vazio. Por favor, tente novamente.");
+                continue;
+            }
 
-        try {
-            clientes.add(new Cliente(nome, email));
-            System.out.println("Cliente cadastrado com sucesso!");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Erro: " + e.getMessage());
+            while (true) {
+                System.out.print("Email: ");
+                String email = scanner.nextLine().trim();
+                
+                try {
+                    Cliente novoCliente = new Cliente(nome, email);
+                    clientes.add(novoCliente);
+                    System.out.println("Cliente cadastrado com sucesso!");
+                    return;
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Erro: " + e.getMessage());
+                    System.out.println("Por favor, tente inserir o email novamente.");
+                }
+            }
         }
     }
 
@@ -101,18 +114,28 @@ public class Sistema {
                 continue;
             }
 
-            System.out.print("Categoria (ALIMENTOS, ELETRONICOS, LIVROS): ");
-            String categoriaStr = scanner.nextLine().toUpperCase();
-
-            try {
-                CategoriaProduto categoria = CategoriaProduto.valueOf(categoriaStr);
-                produtos.add(new Produto(nome, preco, categoria));
-                System.out.println("Produto cadastrado com sucesso!");
-                break; // cadastro concluído, sai do loop
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erro: categoria inválida. Use ALIMENTOS, ELETRONICOS ou LIVROS. Tente novamente.");
-                // volta ao início para refazer o cadastro
+            CategoriaProduto categoria = null;
+            while (categoria == null) {
+                System.out.println("Selecione a categoria:");
+                System.out.println("1. ALIMENTOS");
+                System.out.println("2. ELETRONICOS");
+                System.out.println("3. LIVROS");
+                System.out.print("Opção (1-3): ");
+                String op = scanner.nextLine().trim();
+                try {
+                    int escolha = Integer.parseInt(op);
+                    if (escolha == 1) categoria = CategoriaProduto.ALIMENTOS;
+                    else if (escolha == 2) categoria = CategoriaProduto.ELETRONICOS;
+                    else if (escolha == 3) categoria = CategoriaProduto.LIVROS;
+                    else System.out.println("Opção inválida. Escolha entre 1 e 3.");
+                } catch (NumberFormatException e) {
+                    System.out.println("Entrada inválida. Digite o número da opção.");
+                }
             }
+
+            produtos.add(new Produto(nome, preco, categoria));
+            System.out.println("Produto cadastrado com sucesso: " + nome + " - " + categoria + " - R$" + preco);
+            break; // cadastro concluído, sai do loop
         }
     }
 
@@ -162,7 +185,39 @@ public class Sistema {
         pedido.setStatus(StatusPedido.FILA);
         pedidos.add(pedido);
         filaPedidos.add(pedido);
+        
+        // Mostra o resumo do pedido
+        System.out.println("\n=== Resumo do Pedido ===");
+        System.out.println("Cliente: " + pedido.getCliente().getNome());
+        System.out.println("Itens do pedido:");
+        for (ItemPedido item : pedido.getItens()) {
+            System.out.println("- " + item.getProduto().getNome() + 
+                             " (Qtd: " + item.getQuantidade() + 
+                             ") - R$" + item.calcularSubtotal());
+        }
+        System.out.println("Total do pedido: R$" + pedido.calcularTotal());
+        System.out.println("Status: " + pedido.getStatus());
         System.out.println("Pedido criado e adicionado à fila de processamento.");
+        
+        // Aguarda o processamento completo do pedido
+        try {
+            Thread.sleep(2000); // Aguarda 2 segundos para ver as mensagens de processamento
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Aguarda até o pedido ser finalizado
+        while (pedido.getStatus() != StatusPedido.FINALIZADO) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        // Após todas as mensagens de processamento, pede para pressionar ENTER
+        System.out.println("\nPressione ENTER para voltar ao menu principal...");
+        scanner.nextLine();
     }
 
     // Listagem de clientes
