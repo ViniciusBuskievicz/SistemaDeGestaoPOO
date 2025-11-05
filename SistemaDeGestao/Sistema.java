@@ -3,17 +3,17 @@ package SistemaDeGestao;
 import java.util.*;
 
 public class Sistema {
-    // Listas que armazenam os dados em memória
-    private static List<Cliente> clientes = new ArrayList<>();
-    private static List<Produto> produtos = new ArrayList<>();
-    private static List<Pedido> pedidos = new ArrayList<>();
-    private static Queue<Pedido> filaPedidos = new LinkedList<>();
-    private static Scanner scanner = new Scanner(System.in);
-    private static ProcessadorPedidos processador;
-    private static Thread threadProcessador;
+    // Estruturas de dados para armazenamento em memória
+    private static List<Cliente> clientes = new ArrayList<>();     // Lista de clientes cadastrados
+    private static List<Produto> produtos = new ArrayList<>();     // Lista de produtos disponíveis
+    private static List<Pedido> pedidos = new ArrayList<>();      // Histórico de todos os pedidos
+    private static Queue<Pedido> filaPedidos = new LinkedList<>(); // Fila de pedidos para processamento
+    private static Scanner scanner = new Scanner(System.in);       // Scanner para entrada de dados
+    private static ProcessadorPedidos processador;                 // Processador de pedidos em background
+    private static Thread threadProcessador;                       // Thread para processamento assíncrono
 
     public static void main(String[] args) {
-        // Inicia a thread que processa pedidos em segundo plano
+        // Inicialização do sistema de processamento assíncrono de pedidos
         processador = new ProcessadorPedidos(filaPedidos);
         threadProcessador = new Thread(processador);
         threadProcessador.start();
@@ -21,7 +21,7 @@ public class Sistema {
         // Exibe o menu principal em loop
         exibirMenu();
         
-        // Ao sair do menu, para o processador
+        // Finalização segura do processador de pedidos
         processador.stop();
         try {
             threadProcessador.join();
@@ -65,7 +65,9 @@ public class Sistema {
 
     // Cadastro de cliente com validação
     private static void cadastrarCliente() {
+        // Loop principal para cadastro de cliente
         while (true) {
+            // Validação do nome do cliente
             System.out.print("Nome: ");
             String nome = scanner.nextLine().trim();
             if (nome.isEmpty()) {
@@ -73,16 +75,19 @@ public class Sistema {
                 continue;
             }
 
+            // Loop para validação do email
             while (true) {
                 System.out.print("Email: ");
                 String email = scanner.nextLine().trim();
                 
                 try {
+                    // Tenta criar e adicionar novo cliente
                     Cliente novoCliente = new Cliente(nome, email);
                     clientes.add(novoCliente);
                     System.out.println("Cliente cadastrado com sucesso!");
                     return;
                 } catch (IllegalArgumentException e) {
+                    // Tratamento de erro para email inválido
                     System.out.println("Erro: " + e.getMessage());
                     System.out.println("Por favor, tente inserir o email novamente.");
                 }
@@ -93,6 +98,7 @@ public class Sistema {
     // Cadastro de produto com validação
     private static void cadastrarProduto() {
         while (true) {
+            // Validação do nome do produto
             System.out.print("Nome do produto: ");
             String nome = scanner.nextLine().trim();
             if (nome.isEmpty()) {
@@ -100,27 +106,32 @@ public class Sistema {
                 continue;
             }
 
+            // Validação e conversão do preço
             System.out.print("Preço: ");
             String precoStr = scanner.nextLine().trim().replace(',', '.');
             double preco;
             try {
                 preco = Double.parseDouble(precoStr);
                 if (preco <= 0) {
-                    System.out.println("Erro: o preço do produto deve ser um número positivo. Tente novamente.");
+                    System.out.println("Erro: o preço do produto deve ser um número positivo.");
                     continue;
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Preço inválido. Digite um número válido. Tente novamente.");
+                System.out.println("Preço inválido. Digite um número válido.");
                 continue;
             }
 
+            // Seleção da categoria do produto
             CategoriaProduto categoria = null;
             while (categoria == null) {
+                // Menu de seleção de categoria
                 System.out.println("Selecione a categoria:");
                 System.out.println("1. ALIMENTOS");
                 System.out.println("2. ELETRONICOS");
                 System.out.println("3. LIVROS");
                 System.out.print("Opção (1-3): ");
+                
+                // Validação da escolha da categoria
                 String op = scanner.nextLine().trim();
                 try {
                     int escolha = Integer.parseInt(op);
@@ -133,6 +144,7 @@ public class Sistema {
                 }
             }
 
+            // Criação e adição do novo produto
             produtos.add(new Produto(nome, preco, categoria));
             System.out.println("Produto cadastrado com sucesso: " + nome + " - " + categoria + " - R$" + preco);
             break; // cadastro concluído, sai do loop
@@ -141,25 +153,31 @@ public class Sistema {
 
     // Criação de pedido com múltiplos itens
     private static void criarPedido() {
+        // Verificação de pré-requisitos
         if (clientes.isEmpty() || produtos.isEmpty()) {
             System.out.println("Cadastre pelo menos um cliente e um produto antes de criar pedidos.");
             return;
         }
 
+        // Seleção do cliente
         listarClientes();
         System.out.print("Escolha o índice do cliente: ");
         int idxCliente = scanner.nextInt();
         scanner.nextLine();
 
+        // Validação do índice do cliente
         if (idxCliente < 0 || idxCliente >= clientes.size()) {
             System.out.println("Índice inválido.");
             return;
         }
 
+        // Criação do pedido e adição de itens
         Pedido pedido = new Pedido(clientes.get(idxCliente));
-
-        String continuar = "s"; // Inicializa para entrar no loop
+        String continuar = "s";
+        
+        // Loop para adicionar múltiplos itens ao pedido
         while (continuar.equalsIgnoreCase("s")) {
+            // Seleção e validação dos produtos
             listarProdutos();
             System.out.print("Escolha o índice do produto: ");
             int idxProduto = scanner.nextInt();
@@ -172,6 +190,7 @@ public class Sistema {
                 continue;
             }
 
+            // Adiciona item ao pedido com tratamento de erro
             try {
                 pedido.adicionarItem(produtos.get(idxProduto), qtd);
             } catch (IllegalArgumentException e) {
@@ -182,11 +201,12 @@ public class Sistema {
             continuar = scanner.nextLine();
         }
 
+        // Finalização e processamento do pedido
         pedido.setStatus(StatusPedido.FILA);
         pedidos.add(pedido);
         filaPedidos.add(pedido);
         
-        // Mostra o resumo do pedido
+        // Exibição do resumo do pedido e aguardo do processamento
         System.out.println("\n=== Resumo do Pedido ===");
         System.out.println("Cliente: " + pedido.getCliente().getNome());
         System.out.println("Itens do pedido:");
